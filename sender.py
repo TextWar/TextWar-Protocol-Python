@@ -25,25 +25,24 @@ class Server(object):
         self.p.start()
 
     def loop(self, json):
-        s = socket.socket()
-
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-        s.bind((self.server, self.port))  # 绑定端口
-
-        s.listen(0)  # 等待客户端连接
         while True:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+            s.bind((self.server, self.port))  # 绑定端口
+
+            s.listen(0)  # 等待客户端连接
             c, addr = s.accept()  # 建立客户端连接
-            print(addr, json.get().replace("\n", ""))
-            try:
+            while 1:
+                time.sleep(0.5)
                 c.send(get_format(json.get()).encode())
-            finally:
-                c.close()  # 关闭连接
+
 
     def stop(self):
         self.p.terminate()
-
-
+        self.p.c.close()
+        self.p.s.close()
 event = """
 {
     "type": "event",
@@ -56,16 +55,17 @@ event = """
 
 """
 
-try:
-    host = socket.gethostname()  # 获取本地主机名
-    port = 31244  # 设置端口
-    a = Server(host, port)
-    ab = multiprocessing.Queue(1)
-    a.start(ab)
+if __name__ == "__main__":
+    try:
+        host = socket.gethostname()  # 获取本地主机名
+        port = 31244  # 设置端口
+        a = Server(host, port)
+        ab = multiprocessing.Queue(1)
+        a.start(ab)
 
-    while True:
-        ab.put(event)
-    # a.stop()
-    # sys.exit()
-except (SystemExit, KeyboardInterrupt):
-    sys.exit()
+        while True:
+            ab.put(event)
+        # a.stop()
+        # sys.exit()
+    except (SystemExit, KeyboardInterrupt):
+        sys.exit()
